@@ -1,0 +1,1 @@
+# Earthquake_Detector_North_India
