@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-gradient-to-br from-slate-950 via-zinc-950 to-slate-950 text-white overflow-x-hidden">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seismic Nexus — Cinematic</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .header-font { font-family: 'Space Grotesk', sans-serif; }
+    .glass { background: rgba(15,23,42,0.75); backdrop-filter: blur(20px); }
+    .seismic-wave { animation: seismic 3s linear infinite; }
+    @keyframes seismic { 0% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -40; } }
+    .card { transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+    .card:hover { transform: translateY(-12px) scale(1.02); box-shadow: 0 0 60px -10px rgb(103 232 249); }
+    #particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.15; }
+    .quake-row { transition: all 0.3s ease; }
+    .quake-row:hover { background-color: #1e2937; transform: translateX(8px); }
+  </style>
+</head>
+<body class="min-h-screen relative">
+  <!-- PARTICLE BACKGROUND -->
+  <canvas id="particles"></canvas>
+
+  <div class="max-w-6xl mx-auto p-8 relative z-10">
+    <!-- HEADER -->
+    <div class="flex justify-between items-center mb-12">
+      <div class="flex items-center gap-5">
+        <div class="relative">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <path class="seismic-wave" d="M8 24 Q12 10 16 24 Q20 38 24 24 Q28 10 32 24 Q36 38 40 24" stroke="#67e8f9" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="header-font text-5xl font-bold tracking-tighter">SEISMIC NEXUS</h1>
+          <p class="text-cyan-400 text-sm tracking-[4px] -mt-1">HIMALAYA • LIVE 2026</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="px-6 py-2 rounded-3xl glass flex items-center gap-2 text-xs font-medium">
+          <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+          LIVE FEED
+        </div>
+        <button onclick="fetchData()" class="px-8 py-4 bg-white text-slate-950 rounded-3xl font-semibold flex items-center gap-3 hover:scale-105 transition-all shadow-2xl">
+          <i class="fa-solid fa-sync"></i> REFRESH
+        </button>
+      </div>
+    </div>
+
+    <!-- RISK HERO -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+      <div id="risk-card" class="lg:col-span-2 glass border border-cyan-500/30 rounded-3xl p-12 card">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="uppercase text-xs tracking-widest text-cyan-300">SRINAGAR • KASHMIR ARC</div>
+            <div id="risk-level" class="header-font text-7xl font-bold text-cyan-400">LOW</div>
+          </div>
+          <div class="relative w-44 h-44">
+            <svg class="w-44 h-44 -rotate-90" viewBox="0 0 160 160">
+              <circle cx="80" cy="80" r="72" fill="none" stroke="#1e2937" stroke-width="18"></circle>
+              <circle id="meter-progress" cx="80" cy="80" r="72" fill="none" stroke="#67e8f9" stroke-width="18" stroke-dasharray="452" stroke-dashoffset="452" stroke-linecap="round"></circle>
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center flex-col">
+              <div id="prob-7day" class="header-font text-6xl font-bold">0</div>
+              <div class="text-xs text-cyan-300 tracking-widest">7-DAY M5+</div>
+            </div>
+          </div>
+        </div>
+        <div id="risk-desc" class="mt-8 text-slate-300">Stable • Monitoring routine</div>
+      </div>
+
+      <div class="glass border border-cyan-500/20 rounded-3xl p-10 card flex flex-col justify-between">
+        <div><div class="text-xs text-slate-400">24H ANY QUAKE</div><div id="prob-24h" class="header-font text-6xl font-bold text-sky-400">0</div></div>
+        <div><div class="text-xs text-slate-400">M≥4 LAST 60 DAYS</div><div id="quake-count" class="header-font text-6xl font-bold text-amber-400">0</div></div>
+      </div>
+    </div>
+
+    <!-- CHART + MAP -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-16">
+      <div class="lg:col-span-3 glass border border-cyan-500/20 rounded-3xl p-8 card">
+        <div class="font-medium mb-6">Magnitude Trend • Last 30 Days</div>
+        <canvas id="quakeChart" class="h-80"></canvas>
+      </div>
+      <div class="lg:col-span-2 glass border border-cyan-500/20 rounded-3xl p-8 card flex flex-col">
+        <div class="font-medium mb-4">Interactive Regional Map</div>
+        <div class="flex-1 bg-slate-950 rounded-2xl flex items-center justify-center border border-slate-700">
+          <div class="text-center text-slate-400">
+            <i class="fa-solid fa-map text-7xl mb-4 opacity-30"></i>
+            <p>Your downloaded map goes here</p>
+            <p class="text-xs mt-1">(Clickable cities coming when you return)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="glass border border-cyan-500/20 rounded-3xl overflow-hidden card">
+      <div class="px-10 py-6 border-b border-slate-700 font-medium">LIVE QUAKE FEED • HIMALAYAN ARC</div>
+      <div id="quake-table" class="overflow-auto max-h-[420px]"></div>
+    </div>
+
+    <div class="text-center text-[10px] text-slate-500 mt-12">Cinematic edition • Functionality-first prediction engine • Built for Philip in one file</div>
+  </div>
+
+  <script>
+    // Particle background
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    let particles = [];
+    class Particle {
+      constructor() { this.x = Math.random()*canvas.width; this.y = Math.random()*canvas.height; this.size = Math.random()*2+0.5; this.speed = Math.random()*0.5+0.2; }
+      update() { this.y += this.speed; if(this.y > canvas.height) this.y = 0; }
+      draw() { ctx.fillStyle = '#67e8f9'; ctx.globalAlpha = 0.6; ctx.fillRect(this.x, this.y, this.size, this.size); }
+    }
+    for(let i=0; i<80; i++) particles.push(new Particle());
+    function animateParticles() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      particles.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(animateParticles);
+    }
+    window.addEventListener('resize', ()=>{canvas.width=window.innerWidth; canvas.height=window.innerHeight;});
+    animateParticles();
+
+    // Count-up animation
+    function countUp(el, target, suffix='', duration=1800) {
+      let start = 0;
+      const step = Math.ceil(target / 30);
+      const timer = setInterval(() => {
+        start += step;
+        if (start >= target) {
+          el.textContent = target + suffix;
+          clearInterval(timer);
+        } else {
+          el.textContent = start + suffix;
+        }
+      }, duration / 30);
+    }
+
+    // Main data fetch + IMPROVED PREDICTION ENGINE
+    let chart;
+    const LAT = 34.0837;
+    const LON = 74.7973;
+    const RADIUS = 500;
+    const DAYS_BACK = 365; // much more stable baseline than 60 days
+
+    async function fetchData() {
+      document.querySelector('button').innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> FETCHING...`;
+      
+      const end = new Date();
+      const start = new Date(end.getTime() - DAYS_BACK * 86400000);
+      const url = `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${start.toISOString()}&endtime=${end.toISOString()}&minmagnitude=4.0&latitude=${LAT}&longitude=${LON}&maxradiuskm=${RADIUS}`;
+      
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const quakes = data.features || [];
+        
+        let processed = quakes.map(f => ({
+          time: new Date(f.properties.time),
+          mag: f.properties.mag,
+          place: f.properties.place,
+          depth: f.properties.depth
+        })).sort((a,b) => b.time - a.time);
+
+        // ==================== IMPROVED PREDICTION LOGIC ====================
+        const historicalDays = DAYS_BACK;
+        const historicalM4Rate = processed.length / historicalDays;
+
+        const m5Quakes = processed.filter(q => q.mag >= 5);
+        const historicalM5Rate = m5Quakes.length / historicalDays;
+
+        // Recent activity windows
+        const last7Days = processed.filter(q => (Date.now() - q.time.getTime()) < 7 * 86400000);
+        const recent7M4Rate = last7Days.length / 7;
+        const recent7M5Count = last7Days.filter(q => q.mag >= 5).length;
+
+        const last48h = processed.filter(q => (Date.now() - q.time.getTime()) < 2 * 86400000);
+        const swarmDetected = last48h.length >= 3; // cluster = potential foreshock/aftershock swarm
+
+        const last30Days = processed.filter(q => (Date.now() - q.time.getTime()) < 30 * 86400000);
+        const recent30M4Rate = last30Days.length / 30;
+
+        // Rate ratio (anomaly detection)
+        const rateRatio = historicalM4Rate > 0 ? recent7M4Rate / historicalM4Rate : 1;
+
+        // Poisson probability for next 7 days M5+
+        let prob7M5 = Math.round((1 - Math.exp(-historicalM5Rate * 7)) * 100);
+        prob7M5 = Math.min(95, Math.max(0, prob7M5)); // realistic cap
+
+        // 24h any quake prob (from recent rate)
+        const prob24h = Math.round((1 - Math.exp(-recent7M4Rate)) * 100);
+
+        // Composite Risk Score (0-100) — much smarter than old version
+        let riskScore = prob7M5;
+        riskScore += (rateRatio - 1) * 18;           // anomaly boost
+        if (swarmDetected) riskScore += 25;          // swarm penalty
+        if (recent7M5Count > 0) riskScore += 15;     // recent strong quake
+        riskScore = Math.min(100, Math.max(0, Math.round(riskScore)));
+
+        // Risk level with new logic
+        let riskLevel = "LOW";
+        let riskColor = "cyan";
+        let desc = `Stable • Ratio ${rateRatio.toFixed(1)}x • ${recent7M5Count} M5+ last 7d`;
+
+        if (rateRatio > 2.2 || swarmDetected || riskScore > 65) {
+          riskLevel = "HIGH";
+          riskColor = "rose";
+          desc = `ELEVATED ACTIVITY • Swarm detected • Review safety plan NOW`;
+        } else if (rateRatio > 1.5 || riskScore > 40) {
+          riskLevel = "ELEVATED";
+          riskColor = "amber";
+          desc = `Above baseline • Ratio ${rateRatio.toFixed(1)}x • Monitor closely`;
+        }
+
+        // Update DOM
+        document.getElementById('risk-level').textContent = riskLevel;
+        document.getElementById('risk-level').className = `header-font text-7xl font-bold text-${riskColor}-400`;
+        document.getElementById('risk-desc').textContent = desc;
+        document.getElementById('prob-24h').textContent = prob24h;
+        document.getElementById('quake-count').textContent = processed.length;
+
+        // Meter animation (now uses composite risk score)
+        const offset = 452 - (452 * riskScore / 100);
+        gsap.to("#meter-progress", { 
+          attr: { "stroke-dashoffset": offset }, 
+          duration: 2.2, 
+          ease: "power2.out" 
+        });
+        document.getElementById('meter-progress').setAttribute('stroke', riskColor === 'rose' ? '#fb7185' : riskColor === 'amber' ? '#fbbf24' : '#67e8f9');
+
+        // Count-ups
+        countUp(document.getElementById('prob-7day'), prob7M5, "%");
+        countUp(document.getElementById('prob-24h'), prob24h, "%");
+        countUp(document.getElementById('quake-count'), processed.length);
+
+        // Table
+        let html = `<table class="w-full text-sm"><thead class="bg-slate-950 sticky top-0"><tr class="text-left text-slate-400"><th class="px-8 py-5">TIME</th><th class="px-8 py-5">MAG</th><th class="px-8 py-5">LOCATION</th><th class="px-8 py-5">DEPTH</th></tr></thead><tbody>`;
+        processed.slice(0,20).forEach(q => {
+          html += `<tr class="quake-row border-t border-slate-800"><td class="px-8 py-5">${q.time.toLocaleDateString('en-IN')} ${q.time.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</td><td class="px-8 py-5 font-mono font-bold">${q.mag}</td><td class="px-8 py-5">${q.place}</td><td class="px-8 py-5">${q.depth||'—'} km</td></tr>`;
+        });
+        html += `</tbody></table>`;
+        document.getElementById('quake-table').innerHTML = html;
+
+        // Chart
+        if (chart) chart.destroy();
+        chart = new Chart(document.getElementById('quakeChart'), {
+          type: 'line',
+          data: { 
+            labels: processed.slice(0,15).reverse().map(q => q.time.toLocaleDateString('en-IN')),
+            datasets: [{ label: 'Magnitude', data: processed.slice(0,15).reverse().map(q => q.mag), borderColor: '#67e8f9', tension: 0.4, borderWidth: 3, pointBackgroundColor: '#fff' }]
+          },
+          options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{min:4, grid:{color:'#334155'}}, x:{grid:{color:'#334155'}}}}
+        });
+
+        // Cinematic GSAP entrance
+        gsap.from("#risk-card", { y: 60, opacity: 0, duration: 1.2, ease: "power3.out" });
+        gsap.from(".card", { y: 40, opacity: 0, stagger: 0.15, duration: 1, ease: "power3.out", delay: 0.4 });
+        gsap.from(".quake-row", { x: -40, opacity: 0, stagger: 0.04, duration: 0.8, delay: 0.8 });
+
+      } catch(e) {
+        console.error(e);
+        document.querySelector('button').innerHTML = `⚠️ ERROR`;
+      }
+      document.querySelector('button').innerHTML = `<i class="fa-solid fa-sync"></i> REFRESH`;
+    }
+
+    // Auto refresh every hour + initial load
+    setInterval(fetchData, 3600000);
+    fetchData();
+  </script>
+</body>
+</html>
